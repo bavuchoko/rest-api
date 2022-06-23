@@ -1,6 +1,7 @@
 package com.pjs.studyrestapi.events;
 
 
+import com.pjs.studyrestapi.index.IndexController;
 import org.modelmapper.ModelMapper;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
@@ -10,6 +11,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.Errors;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -36,11 +38,12 @@ public class EventController {
     @PostMapping
     public ResponseEntity createEvents(@RequestBody @Valid EventDto eventDto, Errors errors) {
         if(errors.hasErrors()){
-            return ResponseEntity.badRequest().body(errors);
+
+            return badRequest(errors);
         }
         eventValidator.validate(eventDto,errors);
         if(errors.hasErrors()){
-            return ResponseEntity.badRequest().body(errors);
+            return badRequest(errors);
         }
         //modelmapper 사용해서 EventDto -> Event 를 간편하게.
         //아니면 builder 이용해서 필드별로 각각 세팅
@@ -56,10 +59,12 @@ public class EventController {
         eventResource.add(selfLinkBuilder.withSelfRel());
         eventResource.add(selfLinkBuilder.withRel("update-events"));
         eventResource.add(Link.of("/docs/index.html").withRel("profile"));
-
         return ResponseEntity.created(uri).body(eventResource);
     }
 
+    private ResponseEntity<EntityModel<Errors>> badRequest(Errors errors) {
+        return ResponseEntity.badRequest().body(EntityModel.of(errors).add(linkTo(IndexController.class).withRel("index")));
+    }
 
 
 }
