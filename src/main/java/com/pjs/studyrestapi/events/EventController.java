@@ -3,16 +3,18 @@ package com.pjs.studyrestapi.events;
 
 import com.pjs.studyrestapi.index.IndexController;
 import org.modelmapper.ModelMapper;
-import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.Link;
-import org.springframework.hateoas.MediaTypes;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.*;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.Errors;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import javax.validation.Valid;
 import java.net.URI;
@@ -66,5 +68,14 @@ public class EventController {
         return ResponseEntity.badRequest().body(EntityModel.of(errors).add(linkTo(IndexController.class).withRel("index")));
     }
 
+    @GetMapping
+    public ResponseEntity queryEvent(Pageable pageable, PagedResourcesAssembler<Event> assembler) {
+        Page<Event> page = this.eventRepository.findAll(pageable);
+//        var pageResources = assembler.toModel(page, entity -> new EventResource(entity));
+        var pageResources = assembler.toModel(page, entity ->EntityModel.of(entity).add(linkTo(EventController.class).withSelfRel()));
+        pageResources.add(Link.of("/docs/index.html").withRel("profile"));
+        return ResponseEntity.ok().body(pageResources);
+
+    }
 
 }

@@ -3,6 +3,7 @@ package com.pjs.studyrestapi.events;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pjs.studyrestapi.common.RestDocsConfiguration;
+import com.pjs.studyrestapi.common.TestDescription;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,12 +20,14 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import java.util.stream.IntStream;
 
 import static org.springframework.restdocs.headers.HeaderDocumentation.*;
 import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.linkWithRel;
 import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.links;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.payload.PayloadDocumentation.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -44,6 +47,8 @@ public class EventControllerTests {
     @Autowired
     ObjectMapper objectMapper;
 
+    @Autowired
+    EventRepository eventRepository;
 
     @Test
     public void createEvnet() throws Exception {
@@ -200,4 +205,39 @@ public class EventControllerTests {
                 .andExpect(jsonPath("_links.index").exists())
         ;
     }
+
+    @Test
+
+    public void queryEvents()throws Exception {
+        //Given
+        IntStream.range(0,30).forEach(i->{
+            this.generateevent(i);
+        });
+
+        //When
+        this.mockMvc.perform(get("/api/events")
+                        .param("page","1")
+                        .param("size", "10")
+                        .param("sort", "name,DESC")
+                )
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("page").exists())
+                .andExpect(jsonPath("_embedded.eventList[0]._links.self").exists())
+                .andExpect(jsonPath("_links.profile").exists())
+                .andDo(document("query-events"))
+        ;
+    }
+
+    private void generateevent(int i) {
+        Event event=Event.builder()
+                .name("event"+i)
+                .description("test event")
+                .build();
+        this.eventRepository.save(event);
+    }
+
+
+
+
 }
