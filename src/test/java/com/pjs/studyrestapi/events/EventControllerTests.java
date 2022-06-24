@@ -56,10 +56,10 @@ public class EventControllerTests {
         EventDto event = EventDto.builder()
                 .name("Spring")
                 .description("REST API")
-                .beginEnrollmentDateTime(LocalDateTime.of(2022,6,16,14,21))
-                .closeEnrollmentDateTime(LocalDateTime.of(2022,6,17,14,21))
-                .beginEventDateTime(LocalDateTime.of(2022,6,18,14,25))
-                .endEventDateTime(LocalDateTime.of(2022,6,19,20,11))
+                .beginEnrollmentDateTime(LocalDateTime.of(2022, 6, 16, 14, 21))
+                .closeEnrollmentDateTime(LocalDateTime.of(2022, 6, 17, 14, 21))
+                .beginEventDateTime(LocalDateTime.of(2022, 6, 18, 14, 25))
+                .endEventDateTime(LocalDateTime.of(2022, 6, 19, 20, 11))
                 .basePrice(100)
                 .maxPrice(200)
                 .limitOfEnrollment(100)
@@ -84,10 +84,10 @@ public class EventControllerTests {
                 .andExpect(jsonPath("_links.update-events").exists())
                 .andDo(document("create-events",
                         links(
-                            linkWithRel("self").description("link to self"),
-                            linkWithRel("query-events").description("link to query-event"),
-                            linkWithRel("update-events").description("link to update-event"),
-                            linkWithRel("profile").description("link to update-event")
+                                linkWithRel("self").description("link to self"),
+                                linkWithRel("query-events").description("link to query-event"),
+                                linkWithRel("update-events").description("link to update-event"),
+                                linkWithRel("profile").description("link to update-event")
                         ),
                         requestHeaders(
                                 headerWithName(HttpHeaders.ACCEPT).description("accept header"),
@@ -136,16 +136,17 @@ public class EventControllerTests {
     }
 
     @Test
+    @TestDescription("없어야 되는 값들이 들어온 경우")
     public void createEvnet_Bad_Request() throws Exception {
 
         Event event = Event.builder()
                 .id(100)
                 .name("Spring")
                 .description("REST API")
-                .beginEnrollmentDateTime(LocalDateTime.of(2022,6,16,14,21))
-                .closeEnrollmentDateTime(LocalDateTime.of(2022,6,17,14,21))
-                .beginEventDateTime(LocalDateTime.of(2022,6,18,14,25))
-                .endEventDateTime(LocalDateTime.of(2022,6,19,20,11))
+                .beginEnrollmentDateTime(LocalDateTime.of(2022, 6, 16, 14, 21))
+                .closeEnrollmentDateTime(LocalDateTime.of(2022, 6, 17, 14, 21))
+                .beginEventDateTime(LocalDateTime.of(2022, 6, 18, 14, 25))
+                .endEventDateTime(LocalDateTime.of(2022, 6, 19, 20, 11))
                 .basePrice(100)
                 .maxPrice(200)
                 .limitOfEnrollment(100)
@@ -171,20 +172,21 @@ public class EventControllerTests {
         this.mockMvc.perform(post("/api/events")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(this.objectMapper.writeValueAsString(eventDto)))
-            .andExpect(status().isBadRequest())
+                .andExpect(status().isBadRequest())
         ;
     }
 
     @Test
+    @TestDescription("최소값이 최대값보다 크던지 데이터가 잘못된 경우")
     public void createEvnet_Bad_Request_Wrong_Data() throws Exception {
 
         EventDto event = EventDto.builder()
                 .name("Spring")
                 .description("REST API")
-                .beginEnrollmentDateTime(LocalDateTime.of(2022,6,16,14,21))
-                .closeEnrollmentDateTime(LocalDateTime.of(2021,6,17,14,21))
-                .beginEventDateTime(LocalDateTime.of(2022,6,18,14,25))
-                .endEventDateTime(LocalDateTime.of(2021,6,19,20,11))
+                .beginEnrollmentDateTime(LocalDateTime.of(2022, 6, 16, 14, 21))
+                .closeEnrollmentDateTime(LocalDateTime.of(2021, 6, 17, 14, 21))
+                .beginEventDateTime(LocalDateTime.of(2022, 6, 18, 14, 25))
+                .endEventDateTime(LocalDateTime.of(2021, 6, 19, 20, 11))
                 .basePrice(10000)
                 .maxPrice(200)
                 .limitOfEnrollment(100)
@@ -207,19 +209,19 @@ public class EventControllerTests {
     }
 
     @Test
-
-    public void queryEvents()throws Exception {
+    @TestDescription("30개의 이벤트를 10개씩 두번째 페이지 조회하기")
+    public void queryEvents() throws Exception {
         //Given
-        IntStream.range(0,30).forEach(i->{
+        IntStream.range(0, 30).forEach(i -> {
             this.generateevent(i);
         });
 
         //When
         this.mockMvc.perform(get("/api/events")
-                        .param("page","1")
-                        .param("size", "10")
-                        .param("sort", "name,DESC")
-                )
+                .param("page", "1")          //페이지 0 부터 시작 -> 1은 두번째 페이지
+                .param("size", "10")
+                .param("sort", "name,DESC")
+        )
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("page").exists())
@@ -229,15 +231,42 @@ public class EventControllerTests {
         ;
     }
 
-    private void generateevent(int i) {
-        Event event=Event.builder()
-                .name("event"+i)
+    private Event generateevent(int i) {
+        Event event = Event.builder()
+                .name("event" + i)
                 .description("test event")
                 .build();
-        this.eventRepository.save(event);
+        return this.eventRepository.save(event);
     }
 
 
+    @Test
+    @TestDescription("기존의 이벤트 하나 조회하기")
+    public void getEvent() throws Exception {
+        //Given
+        Event event = this.generateevent(100);
 
+        //When & Then
+        this.mockMvc.perform(get("/api/events/{id}", event.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("name").exists())
+                .andExpect(jsonPath("id").exists())
+                .andExpect(jsonPath("_links.self").exists())
+                .andExpect(jsonPath("_links.profile").exists())
+                .andDo(document("get-an-event"))
+        ;
+    }
 
+    @Test
+    @TestDescription("없는 이벤트를 조회 한 경우 404 응답")
+    public void getEvent404() throws Exception {
+        //Given
+        Event event = this.generateevent(100);
+
+        //When & Then
+        this.mockMvc.perform(get("/api/events/123412"))
+                .andExpect(status().isNotFound())
+
+        ;
+    }
 }

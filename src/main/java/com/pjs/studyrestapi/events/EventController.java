@@ -11,13 +11,11 @@ import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.Errors;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.net.URI;
+import java.util.Optional;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 
@@ -60,22 +58,36 @@ public class EventController {
         eventResource.add(linkTo(EventController.class).withRel("query-events"));
         eventResource.add(selfLinkBuilder.withSelfRel());
         eventResource.add(selfLinkBuilder.withRel("update-events"));
-        eventResource.add(Link.of("/docs/index.html").withRel("profile"));
+        eventResource.add(Link.of("/docs/index.html#resources-events-create").withRel("profile"));
         return ResponseEntity.created(uri).body(eventResource);
     }
 
-    private ResponseEntity<EntityModel<Errors>> badRequest(Errors errors) {
-        return ResponseEntity.badRequest().body(EntityModel.of(errors).add(linkTo(IndexController.class).withRel("index")));
-    }
+
 
     @GetMapping
     public ResponseEntity queryEvent(Pageable pageable, PagedResourcesAssembler<Event> assembler) {
         Page<Event> page = this.eventRepository.findAll(pageable);
 //        var pageResources = assembler.toModel(page, entity -> new EventResource(entity));
         var pageResources = assembler.toModel(page, entity ->EntityModel.of(entity).add(linkTo(EventController.class).withSelfRel()));
-        pageResources.add(Link.of("/docs/index.html").withRel("profile"));
+        pageResources.add(Link.of("/docs/index.html#resources-events-list").withRel("profile"));
         return ResponseEntity.ok().body(pageResources);
 
     }
+    @GetMapping("/{id}")
+    public ResponseEntity getEvent(@PathVariable Integer id) {
+        Optional<Event> optionalEvent = this.eventRepository.findById(id);
+        if (optionalEvent.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        Event event = optionalEvent.get();
+        EntityModel resources =new EventResource(event);
+        resources.add(Link.of("/docs/index.html#resources-events-get").withRel("profile"));
+        return ResponseEntity.ok(resources);
+    }
 
+
+
+    private ResponseEntity<EntityModel<Errors>> badRequest(Errors errors) {
+        return ResponseEntity.badRequest().body(EntityModel.of(errors).add(linkTo(IndexController.class).withRel("index")));
+    }
 }
