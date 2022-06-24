@@ -1,5 +1,6 @@
 package com.pjs.studyrestapi.events;
 
+import com.pjs.studyrestapi.accounts.Account;
 import lombok.*;
 import org.springframework.util.StringUtils;
 
@@ -30,7 +31,8 @@ public class Event {
     @Enumerated(EnumType.STRING)
     private EventStatus eventStatus = EventStatus.DRAFT;
 
-
+    @ManyToOne
+    private Account manager;
 
     public void update() {
         //Update Free
