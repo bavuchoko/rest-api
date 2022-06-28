@@ -5,6 +5,7 @@ import com.pjs.studyrestapi.accounts.Account;
 import com.pjs.studyrestapi.accounts.AccountRepository;
 import com.pjs.studyrestapi.accounts.AccountRole;
 import com.pjs.studyrestapi.accounts.AccountService;
+import com.pjs.studyrestapi.common.AppProperties;
 import com.pjs.studyrestapi.common.BaseControllerTest;
 import com.pjs.studyrestapi.common.TestDescription;
 import org.hamcrest.Matchers;
@@ -44,6 +45,9 @@ public class EventControllerTests extends BaseControllerTest {
 
     @Autowired
     AccountRepository accountRepository;
+
+    @Autowired
+    AppProperties appProperties;
 
     @Before
     public void setUp() {
@@ -145,22 +149,17 @@ public class EventControllerTests extends BaseControllerTest {
 
     private String getAccescToken() throws Exception {
         //Given
-        String username = "test@mail.com";
-        String password = "test";
         Account test = Account.builder()
-                .email(username)
-                .password(password)
+                .email(appProperties.getUserUsername())
+                .password(appProperties.getUsePassword())
                 .roles(Set.of(AccountRole.ADMIN, AccountRole.USER))
                 .build();
         this.accountService.saveAccount(test);
 
-        String clientId = "myApp";
-        String clientSecret = "pass";
-
         ResultActions perform = this.mockMvc.perform(post("/oauth/token")
-                .with(httpBasic(clientId, clientSecret))
-                .param("username", username)
-                .param("password", password)
+                .with(httpBasic(appProperties.getClientId(), appProperties.getClientSecret()))
+                .param("username", appProperties.getUserUsername())
+                .param("password", appProperties.getUsePassword())
                 .param("grant_type", "password"));
         var responseBody = perform.andReturn().getResponse().getContentAsString();
         Jackson2JsonParser parser = new Jackson2JsonParser();
