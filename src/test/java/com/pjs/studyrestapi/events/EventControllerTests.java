@@ -264,6 +264,32 @@ public class EventControllerTests extends BaseControllerTest {
                 .andDo(document("query-events"))
         ;
     }
+    @Test
+    @TestDescription("인증정보 가지고 이벤트 리스트 조회시 등록링크 테스트")
+    public void queryEventsWithAuthentication() throws Exception {
+        //Given
+        IntStream.range(0, 30).forEach(i -> {
+            this.generateEvent(i);
+        });
+
+        //When
+        this.mockMvc.perform(get("/api/events")
+                .header(HttpHeaders.AUTHORIZATION, getBaererToken())
+                .param("page", "1")          //페이지 0 부터 시작 -> 1은 두번째 페이지
+                .param("size", "10")
+                .param("sort", "name,DESC")
+        )
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("page").exists())
+                .andExpect(jsonPath("_embedded.eventList[0]._links.self").exists())
+                .andExpect(jsonPath("_links.profile").exists())
+                .andExpect(jsonPath("_links.create-event").exists())
+                .andDo(document("query-events"))
+        ;
+    }
+
+
 
     private Event generateEvent(int i) {
         Event event = Event.builder()
@@ -299,6 +325,7 @@ public class EventControllerTests extends BaseControllerTest {
                 .andExpect(jsonPath("_links.self").exists())
                 .andExpect(jsonPath("_links.profile").exists())
                 .andDo(document("get-an-event"))
+                .andDo(print())
         ;
     }
 
